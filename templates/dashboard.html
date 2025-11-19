@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehicle Cybersecurity Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar Navigation -->
+        <div class="sidebar">
+            <div class="logo">AutoShield</div>
+            <ul class="nav-menu">
+                <li class="active" data-section="dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</li>
+                <li data-section="can-network"><i class="fas fa-network-wired"></i> CAN Network</li>
+                <li data-section="vulnerability"><i class="fas fa-shield-alt"></i> Vulnerability Scan</li>
+                <li data-section="penetration"><i class="fas fa-bug"></i> Penetration Test</li>
+                <li data-section="intrusion"><i class="fas fa-eye"></i> Intrusion Detection</li>
+                <li data-section="reports"><i class="fas fa-chart-bar"></i> Reports</li>
+                <li data-section="settings"><i class="fas fa-cog"></i> Settings</li>
+            </ul>
+            <div class="system-status">
+                <h4>System Status</h4>
+                <div class="status-item">
+                    <span class="status-indicator active"></span>
+                    <span>Dashboard</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-indicator"></span>
+                    <span>CAN Bus</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-indicator"></span>
+                    <span>IDS</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="content-section active">
+                <h1>Dashboard Overview</h1>
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <i class="fas fa-network-wired"></i>
+                            <h3>CAN Network</h3>
+                        </div>
+                        <div class="stat-body">
+                            <p>Status: <span id="can-status">Inactive</span></p>
+                            <p>Messages: <span id="can-message-count">0</span>/min</p>
+                            <button id="toggle-can" class="btn btn-primary">Start Monitoring</button>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <i class="fas fa-shield-alt"></i>
+                            <h3>Vulnerabilities</h3>
+                        </div>
+                        <div class="stat-body">
+                            <p>Last Scan: <span id="last-scan">Never</span></p>
+                            <p>Issues Found: <span id="vuln-count">0</span></p>
+                            <button id="run-scan" class="btn btn-secondary">Run Scan</button>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <i class="fas fa-bug"></i>
+                            <h3>Penetration Test</h3>
+                        </div>
+                        <div class="stat-body">
+                            <p>Status: <span id="pentest-status">Inactive</span></p>
+                            <div class="progress-container">
+                                <div class="progress-bar" id="pentest-progress" style="width: 0%"></div>
+                            </div>
+                            <button id="run-pentest" class="btn btn-warning">Start Test</button>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <i class="fas fa-eye"></i>
+                            <h3>Intrusion Detection</h3>
+                        </div>
+                        <div class="stat-body">
+                            <p>Status: <span id="ids-status">Inactive</span></p>
+                            <p>Alerts Today: <span id="ids-alerts">0</span></p>
+                            <button id="toggle-ids" class="btn btn-danger">Start IDS</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="recent-events">
+                    <h2>Recent Security Events</h2>
+                    <div class="events-list" id="events-list">
+                        <!-- Events will be populated by JavaScript -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- CAN Network Section -->
+            <section id="can-network" class="content-section">
+                <h1>CAN Network Monitoring</h1>
+                <div class="can-controls">
+                    <button id="start-can" class="btn btn-primary">Start Monitoring</button>
+                    <button id="stop-can" class="btn btn-danger" disabled>Stop Monitoring</button>
+                    <button id="simulate-frame" class="btn btn-secondary">Simulate Frame</button>
+                    <select id="can-interface">
+                        <option value="can0">can0</option>
+                        <option value="can1">can1</option>
+                        <option value="vcan0">vcan0 (Virtual)</option>
+                    </select>
+                </div>
+                <div class="can-message-container">
+                    <div class="message-filters">
+                        <input type="text" id="can-filter" placeholder="Filter messages...">
+                        <label><input type="checkbox" id="show-errors" checked> Show Errors</label>
+                        <label><input type="checkbox" id="show-info" checked> Show Info</label>
+                        <label><input type="checkbox" id="show-control" checked> Show Control</label>
+                    </div>
+                    <div class="can-messages" id="can-messages">
+                        <div class="message-header">
+                            <span>Timestamp</span>
+                            <span>ID</span>
+                            <span>Type</span>
+                            <span>Data</span>
+                            <span>Details</span>
+                        </div>
+                        <!-- Messages will be populated by JavaScript -->
+                    </div>
+                </div>
+                <div class="can-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Messages/sec:</span>
+                        <span class="stat-value" id="msg-rate">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Error Frames:</span>
+                        <span class="stat-value" id="error-frames">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Active ECUs:</span>
+                        <span class="stat-value" id="active-ecus">0</span>
+                    </div>
+                </div>
+                <div class="can-simulation">
+                    <h3>Frame Simulation</h3>
+                    <div class="simulation-form">
+                        <div class="form-group">
+                            <label for="frame-id">CAN ID:</label>
+                            <input type="text" id="frame-id" placeholder="e.g., 0x123">
+                        </div>
+                        <div class="form-group">
+                            <label for="frame-data">Data:</label>
+                            <input type="text" id="frame-data" placeholder="e.g., 00 11 22 33 44 55 66 77">
+                        </div>
+                        <div class="form-group">
+                            <label for="frame-interval">Interval (ms):</label>
+                            <input type="number" id="frame-interval" value="1000" min="10">
+                        </div>
+                        <button id="send-frame" class="btn btn-primary">Send Frame</button>
+                        <button id="send-repeated" class="btn btn-secondary">Send Repeatedly</button>
+                        <button id="stop-sending" class="btn btn-danger" disabled>Stop Sending</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Vulnerability Scan Section -->
+            <section id="vulnerability" class="content-section">
+                <h1>Vulnerability Scanning</h1>
+                <div class="scan-controls">
+                    <div class="scan-options">
+                        <h3>Scan Options</h3>
+                        <label><input type="radio" name="scan-type" value="quick" checked> Quick Scan</label>
+                        <label><input type="radio" name="scan-type" value="full"> Full Scan</label>
+                        <label><input type="radio" name="scan-type" value="custom"> Custom Scan</label>
+                        <div id="custom-options" style="display: none;">
+                            <h4>Custom Options</h4>
+                            <label><input type="checkbox" name="custom-opt" value="firmware"> Firmware Analysis</label>
+                            <label><input type="checkbox" name="custom-opt" value="network"> Network Services</label>
+                            <label><input type="checkbox" name="custom-opt" value="auth"> Authentication</label>
+                            <label><input type="checkbox" name="custom-opt" value="config"> Configuration</label>
+                        </div>
+                    </div>
+                    <div class="scan-actions">
+                        <button id="start-scan" class="btn btn-primary">Start Scan</button>
+                        <button id="stop-scan" class="btn btn-danger" disabled>Stop Scan</button>
+                        <div class="scan-progress">
+                            <div class="progress-container">
+                                <div class="progress-bar" id="scan-progress" style="width: 0%"></div>
+                            </div>
+                            <span id="scan-status">Ready</span>
+                            <span id="scan-estimate">Estimated: --</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="scan-results">
+                    <h3>Scan Results</h3>
+                    <div class="results-filter">
+                        <select id="severity-filter">
+                            <option value="all">All Severities</option>
+                            <option value="critical">Critical</option>
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
+                            <option value="info">Informational</option>
+                        </select>
+                        <button id="export-results" class="btn btn-secondary">Export Results</button>
+                    </div>
+                    <div class="results-table" id="results-table">
+                        <div class="table-header">
+                            <span>Severity</span>
+                            <span>Vulnerability</span>
+                            <span>Component</span>
+                            <span>CVE</span>
+                            <span>Action</span>
+                        </div>
+                        <!-- Results will be populated by JavaScript -->
+                    </div>
+                </div>
+                <div class="scan-history">
+                    <h3>Scan History</h3>
+                    <div class="history-table" id="history-table">
+                        <div class="table-header">
+                            <span>Date</span>
+                            <span>Type</span>
+                            <span>Duration</span>
+                            <span>Findings</span>
+                            <span>Actions</span>
+                        </div>
+                        <!-- History will be populated by JavaScript -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Penetration Test Section -->
+            <section id="penetration" class="content-section">
+                <h1>Penetration Testing</h1>
+                <div class="test-configuration">
+                    <h3>Test Configuration</h3>
+                    <div class="test-options">
+                        <div class="test-profile">
+                            <label>Test Profile:</label>
+                            <select id="test-profile">
+                                <option value="basic">Basic Security Check</option>
+                                <option value="advanced">Advanced Exploitation</option>
+                                <option value="custom">Custom Profile</option>
+                            </select>
+                        </div>
+                        <div class="test-targets">
+                            <label>Target Systems:</label>
+                            <div class="target-list">
+                                <label><input type="checkbox" name="target" value="ecu" checked> ECUs</label>
+                                <label><input type="checkbox" name="target" value="infotainment"> Infotainment</label>
+                                <label><input type="checkbox" name="target" value="telematics"> Telematics</label>
+                                <label><input type="checkbox" name="target" value="gateway"> Gateway</label>
+                            </div>
+                        </div>
+                        <div class="test-advanced" id="test-advanced" style="display: none;">
+                            <h4>Advanced Options</h4>
+                            <label><input type="checkbox" name="adv-opt" value="bruteforce"> Brute Force</label>
+                            <label><input type="checkbox" name="adv-opt" value="fuzzing"> Protocol Fuzzing</label>
+                            <label><input type="checkbox" name="adv-opt" value="replay"> Replay Attacks</label>
+                            <label><input type="checkbox" name="adv-opt" value="dos"> DoS Testing</label>
+                        </div>
+                    </div>
+                    <div class="test-actions">
+                        <button id="start-test" class="btn btn-warning">Start Test</button>
+                        <button id="stop-test" class="btn btn-danger" disabled>Stop Test</button>
+                        <div class="test-progress">
+                            <div class="progress-container">
+                                <div class="progress-bar" id="test-progress" style="width: 0%"></div>
+                            </div>
+                            <span id="test-status">Ready</span>
+                            <span id="test-phase">Phase: --</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="test-results">
+                    <h3>Test Results</h3>
+                    <div class="results-tabs">
+                        <button class="tab-btn active" data-tab="findings">Findings</button>
+                        <button class="tab-btn" data-tab="exploits">Successful Exploits</button>
+                        <button class="tab-btn" data-tab="evidence">Evidence</button>
+                    </div>
+                    <div class="tab-content active" id="findings-tab">
+                        <div class="findings-table" id="findings-table">
+                            <div class="table-header">
+                                <span>Severity</span>
+                                <span>Vulnerability</span>
+                                <span>System</span>
+                                <span>Exploit</span>
+                                <span>Impact</span>
+                            </div>
+                            <!-- Findings will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    <div class="tab-content" id="exploits-tab">
+                        <div class="exploits-list" id="exploits-list">
+                            <!-- Exploits will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    <div class="tab-content" id="evidence-tab">
+                        <div class="evidence-container" id="evidence-container">
+                            <!-- Evidence will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Intrusion Detection Section -->
+            <section id="intrusion" class="content-section">
+                <h1>Intrusion Detection System</h1>
+                <div class="ids-controls">
+                    <div class="ids-status">
+                        <h3>System Status</h3>
+                        <p>Status: <span id="ids-system-status">Inactive</span></p>
+                        <p>Alerts Today: <span id="ids-alert-count">0</span></p>
+                        <p>Last Alert: <span id="ids-last-alert">Never</span></p>
+                        <button id="start-ids" class="btn btn-primary">Start IDS</button>
+                        <button id="stop-ids" class="btn btn-danger" disabled>Stop IDS</button>
+                    </div>
+                    <div class="ids-config">
+                        <h3>Configuration</h3>
+                        <div class="config-options">
+                            <label><input type="checkbox" name="ids-rule" value="can" checked> CAN Bus Anomalies</label>
+                            <label><input type="checkbox" name="ids-rule" value="diagnostic"> Diagnostic Intrusions</label>
+                            <label><input type="checkbox" name="ids-rule" value="flood"> Message Flooding</label>
+                            <label><input type="checkbox" name="ids-rule" value="replay"> Replay Attacks</label>
+                            <label><input type="checkbox" name="ids-rule" value="unauth"> Unauthorized Access</label>
+                        </div>
+                        <button id="update-config" class="btn btn-secondary">Update Configuration</button>
+                    </div>
+                </div>
+                <div class="ids-alerts">
+                    <h3>Recent Alerts</h3>
+                    <div class="alert-filters">
+                        <select id="alert-severity">
+                            <option value="all">All Severities</option>
+                            <option value="critical">Critical</option>
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
+                        </select>
+                        <select id="alert-type">
+                            <option value="all">All Types</option>
+                            <option value="can">CAN Bus</option>
+                            <option value="diagnostic">Diagnostic</option>
+                            <option value="flood">Flooding</option>
+                            <option value="replay">Replay</option>
+                            <option value="unauth">Unauthorized</option>
+                        </select>
+                        <button id="clear-alerts" class="btn btn-secondary">Clear Alerts</button>
+                    </div>
+                    <div class="alerts-table" id="alerts-table">
+                        <div class="table-header">
+                            <span>Timestamp</span>
+                            <span>Severity</span>
+                            <span>Type</span>
+                            <span>Source</span>
+                            <span>Message</span>
+                            <span>Actions</span>
+                        </div>
+                        <!-- Alerts will be populated by JavaScript -->
+                    </div>
+                </div>
+                <div class="ids-rules">
+                    <h3>Custom Rules</h3>
+                    <div class="rules-editor">
+                        <textarea id="custom-rules" placeholder="Define custom IDS rules here..."></textarea>
+                        <button id="save-rules" class="btn btn-primary">Save Rules</button>
+                        <button id="test-rules" class="btn btn-secondary">Test Rules</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Reports Section -->
+            <section id="reports" class="content-section">
+                <h1>Reports</h1>
+                <div class="report-generation">
+                    <h3>Generate Report</h3>
+                    <div class="report-options">
+                        <div class="report-type">
+                            <label>Report Type:</label>
+                            <select id="report-type">
+                                <option value="vulnerability">Vulnerability Scan</option>
+                                <option value="pentest">Penetration Test</option>
+                                <option value="ids">IDS Alerts</option>
+                                <option value="comprehensive">Comprehensive</option>
+                            </select>
+                        </div>
+                        <div class="report-period">
+                            <label>Time Period:</label>
+                            <select id="report-period">
+                                <option value="today">Today</option>
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                                <option value="custom">Custom Range</option>
+                            </select>
+                            <div id="custom-range" style="display: none;">
+                                <input type="date" id="start-date">
+                                <span>to</span>
+                                <input type="date" id="end-date">
+                            </div>
+                        </div>
+                        <div class="report-format">
+                            <label>Format:</label>
+                            <select id="report-format">
+                                <option value="pdf">PDF</option>
+                                <option value="html">HTML</option>
+                                <option value="csv">CSV</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="generate-report" class="btn btn-primary">Generate Report</button>
+                </div>
+                <div class="report-history">
+                    <h3>Report History</h3>
+                    <div class="history-table" id="report-history-table">
+                        <div class="table-header">
+                            <span>Date</span>
+                            <span>Type</span>
+                            <span>Period</span>
+                            <span>Format</span>
+                            <span>Actions</span>
+                        </div>
+                        <!-- Report history will be populated by JavaScript -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings" class="content-section">
+                <h1>Settings</h1>
+                <div class="settings-tabs">
+                    <button class="settings-tab-btn active" data-tab="general">General</button>
+                    <button class="settings-tab-btn" data-tab="can">CAN</button>
+                    <button class="settings-tab-btn" data-tab="scan">Scanning</button>
+                    <button class="settings-tab-btn" data-tab="pentest">Penetration</button>
+                    <button class="settings-tab-btn" data-tab="ids">IDS</button>
+                    <button class="settings-tab-btn" data-tab="users">Users</button>
+                </div>
+                <div class="settings-content active" id="general-settings">
+                    <h3>General Settings</h3>
+                    <div class="settings-form">
+                        <div class="form-group">
+                            <label for="system-name">System Name:</label>
+                            <input type="text" id="system-name" value="AutoShield Dashboard">
+                        </div>
+                        <div class="form-group">
+                            <label for="refresh-rate">Refresh Rate (seconds):</label>
+                            <input type="number" id="refresh-rate" min="1" max="60" value="5">
+                        </div>
+                        <div class="form-group">
+                            <label for="theme">Theme:</label>
+                            <select id="theme">
+                                <option value="light">Light</option>
+                                <option value="dark">Dark</option>
+                                <option value="blue">Blue</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="data-retention">Data Retention (days):</label>
+                            <input type="number" id="data-retention" min="1" max="365" value="30">
+                        </div>
+                        <button id="save-general" class="btn btn-primary">Save Settings</button>
+                    </div>
+                </div>
+                <div class="settings-content" id="can-settings">
+                    <h3>CAN Bus Settings</h3>
+                    <div class="settings-form">
+                        <div class="form-group">
+                            <label for="default-can-interface">Default CAN Interface:</label>
+                            <select id="default-can-interface">
+                                <option value="can0">can0</option>
+                                <option value="can1">can1</option>
+                                <option value="vcan0">vcan0</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="can-bitrate">Bitrate (bps):</label>
+                            <input type="number" id="can-bitrate" value="500000">
+                        </div>
+                        <div class="form-group">
+                            <label for="can-sample-point">Sample Point (%):</label>
+                            <input type="number" id="can-sample-point" min="50" max="90" value="75">
+                        </div>
+                        <div class="form-group">
+                            <label><input type="checkbox" id="can-auto-start"> Auto-start monitoring on launch</label>
+                        </div>
+                        <button id="save-can" class="btn btn-primary">Save Settings</button>
+                    </div>
+                </div>
+                <div class="settings-content" id="scan-settings">
+                    <h3>Vulnerability Scan Settings</h3>
+                    <div class="settings-form">
+                        <div class="form-group">
+                            <label for="default-scan-type">Default Scan Type:</label>
+                            <select id="default-scan-type">
+                                <option value="quick">Quick Scan</option>
+                                <option value="full">Full Scan</option>
+                                <option value="custom">Custom Scan</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="scan-threads">Scan Threads:</label>
+                            <input type="number" id="scan-threads" min="1" max="16" value="4">
+                        </div>
+                        <div class="form-group">
+                            <label><input type="checkbox" id="scan-auto-save"> Auto-save scan results</label>
+                        </div>
+                        <div class="form-group">
+                            <label><input type="checkbox" id="scan-schedule"> Enable scheduled scans</label>
+                            <div id="scan-schedule-options" style="display: none;">
+                                <select id="scan-schedule-frequency">
+                                    <option value="daily">Daily</option>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="monthly">Monthly</option>
+                                </select>
+                                <input type="time" id="scan-schedule-time" value="02:00">
+                            </div>
+                        </div>
+                        <button id="save-scan" class="btn btn-primary">Save Settings</button>
+                    </div>
+                </div>
+                <div class="settings-content" id="pentest-settings">
+                    <h3>Penetration Test Settings</h3>
+                    <div class="settings-form">
+                        <div class="form-group">
+                            <label for="default-pentest-profile">Default Test Profile:</label>
+                            <select id="default-pentest-profile">
+                                <option value="basic">Basic Security Check</option>
+                                <option value="advanced">Advanced Exploitation</option>
+                                <option value="custom">Custom Profile</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label><input type="checkbox" id="pentest-safe-mode"> Safe mode (no actual exploitation)</label>
+                        </div>
+                        <div class="form-group">
+                            <label><input type="checkbox" id="pentest-auto-stop"> Auto-stop after completion</label>
+                        </div>
+                        <div class="form-group">
+                            <label><input type="checkbox" id="pentest-save-evidence"> Save evidence for all tests</label>
+                        </div>
+                        <button id="save-pentest" class="btn btn-primary">Save Settings</button>
+                    </div>
+                </div>
+                <div class="settings-content" id="ids-settings">
+                    <h3>IDS Settings</h3>
+                    <div class="settings-form">
+                        <div class="form-group">
+                            <label><input type="checkbox" id="ids-auto-start"> Auto-start IDS on launch</label>
+                        </div>
+                        <div class="form-group">
+                            <label><input type="checkbox" id="ids-email-alerts"> Enable email alerts</label>
+                            <div id="email-alert-options" style="display: none;">
+                                <input type="email" id="ids-email-address" placeholder="Email address">
+                                <select id="ids-email-level">
+                                    <option value="critical">Critical Only</option>
+                                    <option value="high">High+</option>
+                                    <option value="medium">Medium+</option>
+                                    <option value="all">All Alerts</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="ids-alert-retention">Alert Retention (days):</label>
+                            <input type="number" id="ids-alert-retention" min="1" max="365" value="30">
+                        </div>
+                        <div class="form-group">
+                            <label for="ids-sensitivity">Detection Sensitivity:</label>
+                            <select id="ids-sensitivity">
+                                <option value="low">Low (fewer false positives)</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High (more detection)</option>
+                            </select>
+                        </div>
+                        <button id="save-ids" class="btn btn-primary">Save Settings</button>
+                    </div>
+                </div>
+                <div class="settings-content" id="users-settings">
+                    <h3>User Management</h3>
+                    <div class="user-list" id="user-list">
+                        <div class="table-header">
+                            <span>Username</span>
+                            <span>Role</span>
+                            <span>Last Login</span>
+                            <span>Actions</span>
+                        </div>
+                        <!-- Users will be populated by JavaScript -->
+                    </div>
+                    <button id="add-user" class="btn btn-primary">Add User</button>
+                    <div class="user-form" id="user-form" style="display: none;">
+                        <div class="form-group">
+                            <label for="new-username">Username:</label>
+                            <input type="text" id="new-username">
+                        </div>
+                        <div class="form-group">
+                            <label for="new-password">Password:</label>
+                            <input type="password" id="new-password">
+                        </div>
+                        <div class="form-group">
+                            <label for="new-role">Role:</label>
+                            <select id="new-role">
+                                <option value="admin">Administrator</option>
+                                <option value="operator">Operator</option>
+                                <option value="viewer">Viewer</option>
+                            </select>
+                        </div>
+                        <button id="save-user" class="btn btn-primary">Save User</button>
+                        <button id="cancel-user" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Modal for CAN Frame Simulation -->
+    <div class="modal" id="can-frame-modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3>Simulate CAN Frame</h3>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="modal-frame-id">CAN ID (hex):</label>
+                    <input type="text" id="modal-frame-id" placeholder="0x123">
+                </div>
+                <div class="form-group">
+                    <label for="modal-frame-data">Data (hex bytes):</label>
+                    <input type="text" id="modal-frame-data" placeholder="00 11 22 33 44 55 66 77">
+                </div>
+                <div class="form-group">
+                    <label for="modal-frame-interval">Interval (ms):</label>
+                    <input type="number" id="modal-frame-interval" value="1000" min="10">
+                </div>
+                <div class="form-group">
+                    <label for="modal-frame-count">Repeat Count:</label>
+                    <input type="number" id="modal-frame-count" value="1" min="1">
+                </div>
+                <button id="modal-send-frame" class="btn btn-primary">Send Frame</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Scan Results -->
+    <div class="modal" id="scan-result-modal">
+        <div class="modal-content large">
+            <span class="close-btn">&times;</span>
+            <h3>Vulnerability Details</h3>
+            <div class="modal-body">
+                <div class="result-details" id="result-details">
+                    <!-- Details will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

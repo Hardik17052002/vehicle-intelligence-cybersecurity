@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Network Cortex</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Socket.IO Client - CRITICAL: Load before custom JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        body {
+            background: url('../static/cyber_matrix_bg.gif') no-repeat center center fixed;
+            background-size: cover;
+            font-family: 'Orbitron', sans-serif;
+            color: #00ff88;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .network-container {
+            background: rgba(10, 20, 40, 0.9);
+            border: 1px solid #00b8ff;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 0 auto;
+            width: 90%;
+            box-shadow: 0 0 30px rgba(0, 184, 255, 0.3);
+        }
+        
+        .tool-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .tool-btn {
+            background: rgba(20, 10, 30, 0.7);
+            border: 1px solid #bd00ff;
+            color: #00ff88;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .tool-btn.active {
+            background: #bd00ff;
+            color: white;
+        }
+        
+        .tool-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(189, 0, 255, 0.5);
+        }
+        
+        .tool-content {
+            display: none;
+        }
+        
+        .tool-content.active {
+            display: block;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+        
+        .input-group input, .input-group select {
+            background: rgba(10, 10, 26, 0.8);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        .input-group input::placeholder {
+            color: rgba(0, 255, 136, 0.5);
+        }
+        
+        .input-group button {
+            background: linear-gradient(45deg, #00ff88, #00b8ff);
+            border: none;
+            color: #0a0a1a;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .input-group button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.5);
+        }
+        
+        .input-group button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .ping-results, .traceroute-results, .portscan-results {
+            background: #0a0a1a;
+            color: #00ff88;
+            font-family: monospace;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            height: 300px;
+            overflow-y: scroll;
+            border: 1px solid #00ff88;
+            white-space: pre-wrap;
+        }
+        
+        .result-line {
+            margin-bottom: 3px;
+        }
+        
+        .result-line.error {
+            color: #ff0055;
+        }
+        
+        .result-line.success {
+            color: #00ff88;
+        }
+        
+        .result-line.warning {
+            color: #ffaa00;
+        }
+        
+        /* ENHANCED TOPOLOGY STYLES */
+        .topology-map {
+            height: 500px;
+            background: linear-gradient(135deg, #0a1420 0%, #1a2030 100%);
+            border: 2px solid #00ff88;
+            border-radius: 10px;
+            margin-top: 20px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0, 255, 136, 0.1);
+        }
+        
+        .device-node {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 10;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        }
+        
+        .device-node:hover {
+            transform: translate(-50%, -50%) scale(1.2);
+            box-shadow: 0 0 25px rgba(0, 255, 136, 0.6);
+        }
+        
+        .device-tooltip {
+            position: absolute;
+            bottom: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ff88;
+            padding: 5px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            white-space: nowrap;
+            border: 1px solid #00ff88;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 20;
+        }
+        
+        .device-node:hover .device-tooltip {
+            opacity: 1;
+        }
+        
+        .connection-line {
+            position: absolute;
+            height: 3px;
+            background: linear-gradient(90deg, rgba(0, 255, 136, 0.7), rgba(0, 184, 255, 0.7));
+            transform-origin: 0 50%;
+            z-index: 1;
+            border-radius: 2px;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+            animation: pulse-line 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes pulse-line {
+            0% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .bandwidth-meter {
+            width: 100%;
+            height: 25px;
+            background: rgba(10, 20, 40, 0.8);
+            border-radius: 12px;
+            margin-top: 20px;
+            overflow: hidden;
+            border: 1px solid #00ff88;
+            position: relative;
+        }
+        
+        .bandwidth-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00b8ff, #bd00ff);
+            width: 50%;
+            transition: width 0.8s ease;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .bandwidth-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        
+        .status-running {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            border: 1px solid #00ff88;
+        }
+        
+        .status-ready {
+            background: rgba(0, 184, 255, 0.2);
+            color: #00b8ff;
+            border: 1px solid #00b8ff;
+        }
+        
+        .topology-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .network-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .stat-item {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+        
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #00ff88;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #00b8ff;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="network-container">
+        <h1><i class="fas fa-network-wired"></i> Network Cortex</h1>
+        
+        <div class="tool-selector">
+            <div class="tool-btn active" data-tool="ping"><i class="fas fa-satellite-dish"></i> Ping</div>
+            <div class="tool-btn" data-tool="traceroute"><i class="fas fa-route"></i> Traceroute</div>
+            <div class="tool-btn" data-tool="portscan"><i class="fas fa-search"></i> Port Scan</div>
+            <div class="tool-btn" data-tool="topology"><i class="fas fa-project-diagram"></i> Topology</div>
+        </div>
+        
+        <!-- Ping Tool -->
+        <div class="tool-content active" id="ping-tool">
+            <div class="input-group">
+                <input type="text" id="pingTarget" placeholder="IP/Hostname (e.g., google.com)" value="">
+                <button id="pingButton" onclick="runPing()"><i class="fas fa-play"></i> Ping</button>
+                <span id="pingStatus" class="status-indicator status-ready">Ready</span>
+            </div>
+            <div class="ping-results" id="pingResults">
+> Real-time ping tool ready. Enter target to begin.
+            </div>
+        </div>
+        
+        <!-- Traceroute Tool -->
+        <div class="tool-content" id="traceroute-tool">
+            <div class="input-group">
+                <input type="text" id="traceTarget" placeholder="IP/Hostname (e.g., google.com)" value="">
+                <button id="traceButton" onclick="runTraceroute()"><i class="fas fa-play"></i> Trace</button>
+                <span id="traceStatus" class="status-indicator status-ready">Ready</span>
+            </div>
+            <div class="traceroute-results" id="tracerouteResults">
+> Real-time traceroute tool ready. Enter target to begin.
+            </div>
+        </div>
+        
+        <!-- Port Scan Tool -->
+        <div class="tool-content" id="portscan-tool">
+            <div class="input-group">
+                <input type="text" id="scanTarget" placeholder="IP/Hostname (e.g., scanme.nmap.org)" value="">
+                <select id="scanSpeed">
+                    <option value="fast">Fast Scan (Top ports)</option>
+                    <option value="normal">Normal Scan (1-1000)</option>
+                    <option value="deep">Deep Scan (1-65535)</option>
+                </select>
+                <button id="scanButton" onclick="runPortScan()"><i class="fas fa-play"></i> Scan</button>
+                <span id="scanStatus" class="status-indicator status-ready">Ready</span>
+            </div>
+            <div class="portscan-results" id="portscanResults">
+> Real-time port scanner ready. Enter target to begin.
+            </div>
+        </div>
+        
+        <!-- ENHANCED TOPOLOGY TOOL -->
+        <div class="tool-content" id="topology-tool">
+            <div class="input-group">
+                <button onclick="discoverNetwork()"><i class="fas fa-sync-alt"></i> Discover Vehicle Network</button>
+                <button onclick="clearTopology()"><i class="fas fa-trash"></i> Clear</button>
+                <span id="topologyStatus" class="status-indicator status-ready">Ready</span>
+            </div>
+            
+            <div class="topology-map" id="topologyMap">
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: rgba(0, 255, 136, 0.5); font-size: 14px;">
+                    Click "Discover Vehicle Network" to visualize network topology
+                </div>
+            </div>
+            
+            <!-- Legend -->
+            <div class="topology-legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #00b8ff;"></div>
+                    <span>Vehicle Gateway</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #00ff88;"></div>
+                    <span>ECU/Controllers</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #bd00ff;"></div>
+                    <span>Sensors</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ff0055;"></div>
+                    <span>Security Systems</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ffaa00;"></div>
+                    <span>Infotainment</span>
+                </div>
+            </div>
+            
+            <!-- Network Statistics -->
+            <div class="network-stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="deviceCount">0</div>
+                    <div class="stat-label">Active Devices</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="connectionCount">0</div>
+                    <div class="stat-label">Connections</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="networkHealth">100%</div>
+                    <div class="stat-label">Network Health</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="latencyAvg">2ms</div>
+                    <div class="stat-label">Avg Latency</div>
+                </div>
+            </div>
+            
+            <h3><i class="fas fa-tachometer-alt"></i> Bandwidth Monitor</h3>
+            <div class="bandwidth-meter">
+                <div class="bandwidth-bar" id="bandwidthBar"></div>
+            </div>
+            <p>Current usage: <span id="bandwidthValue">0</span> Mbps | Peak: <span id="peakBandwidth">0</span> Mbps</p>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Socket.IO connection
+        const socket = io();
+        
+        // Global variables for topology
+        let discoveredDevices = [];
+        let networkConnections = [];
+        let bandwidthHistory = [];
+        let topologyInterval = null;
+        
+        // Tool selector
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tool-content').forEach(c => c.classList.remove('active'));
+                
+                btn.classList.add('active');
+                document.getElementById(`${btn.dataset.tool}-tool`).classList.add('active');
+            });
+        });
+        
+        // Ping tool
+        function runPing() {
+            const target = document.getElementById('pingTarget').value;
+            const results = document.getElementById('pingResults');
+            const button = document.getElementById('pingButton');
+            const status = document.getElementById('pingStatus');
+            
+            if (!target.trim()) {
+                appendResult(results, "> Error: Please enter a target", 'error');
+                return;
+            }
+            
+            results.innerHTML = '';
+            button.disabled = true;
+            status.textContent = 'Running';
+            status.className = 'status-indicator status-running';
+            
+            socket.emit('start_ping', { target: target.trim() });
+        }
+        
+        // Traceroute tool
+        function runTraceroute() {
+            const target = document.getElementById('traceTarget').value;
+            const results = document.getElementById('tracerouteResults');
+            const button = document.getElementById('traceButton');
+            const status = document.getElementById('traceStatus');
+            
+            if (!target.trim()) {
+                appendResult(results, "> Error: Please enter a target", 'error');
+                return;
+            }
+            
+            results.innerHTML = '';
+            button.disabled = true;
+            status.textContent = 'Running';
+            status.className = 'status-indicator status-running';
+            
+            socket.emit('start_traceroute', { target: target.trim() });
+        }
+        
+        // Port scan tool
+        function runPortScan() {
+            const target = document.getElementById('scanTarget').value;
+            const speed = document.getElementById('scanSpeed').value;
+            const results = document.getElementById('portscanResults');
+            const button = document.getElementById('scanButton');
+            const status = document.getElementById('scanStatus');
+            
+            if (!target.trim()) {
+                appendResult(results, "> Error: Please enter a target", 'error');
+                return;
+            }
+            
+            results.innerHTML = '';
+            button.disabled = true;
+            status.textContent = 'Scanning';
+            status.className = 'status-indicator status-running';
+            
+            socket.emit('start_portscan', { 
+                target: target.trim(), 
+                scan_speed: speed,
+                use_nmap: true 
+            });
+        }
+        
+        // Helper function to append results
+        function appendResult(container, message, level = 'info') {
+            const line = document.createElement('div');
+            line.className = `result-line ${level}`;
+            line.textContent = message;
+            container.appendChild(line);
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        // ENHANCED TOPOLOGY FUNCTIONS
+        function discoverNetwork() {
+            const map = document.getElementById('topologyMap');
+            const status = document.getElementById('topologyStatus');
+            
+            // Clear existing content
+            map.innerHTML = '';
+            discoveredDevices = [];
+            networkConnections = [];
+            
+            status.textContent = 'Discovering...';
+            status.className = 'status-indicator status-running';
+            
+            // Vehicle-specific network devices
+            const vehicleDevices = [
+                { name: 'Vehicle Gateway', type: 'gateway', icon: 'fa-car', color: '#00b8ff', x: 250, y: 250 },
+                { name: 'Engine ECU', type: 'ecu', icon: 'fa-cog', color: '#00ff88', x: 150, y: 150 },
+                { name: 'Brake Controller', type: 'ecu', icon: 'fa-stop-circle', color: '#00ff88', x: 350, y: 150 },
+                { name: 'Transmission ECU', type: 'ecu', icon: 'fa-sync', color: '#00ff88', x: 150, y: 350 },
+                { name: 'Body Control Module', type: 'ecu', icon: 'fa-car-side', color: '#00ff88', x: 350, y: 350 },
+                { name: 'Airbag System', type: 'safety', icon: 'fa-shield-alt', color: '#ff0055', x: 100, y: 250 },
+                { name: 'Security Module', type: 'safety', icon: 'fa-lock', color: '#ff0055', x: 400, y: 250 },
+                { name: 'Infotainment', type: 'info', icon: 'fa-tv', color: '#ffaa00', x: 250, y: 100 },
+                { name: 'GPS Module', type: 'sensor', icon: 'fa-satellite', color: '#bd00ff', x: 250, y: 400 },
+                { name: 'OBD-II Port', type: 'diagnostic', icon: 'fa-plug', color: '#bd00ff', x: 80, y: 380 }
+            ];
+            
+            // Get container dimensions for proper scaling
+            const containerRect = map.getBoundingClientRect();
+            const mapWidth = containerRect.width || 500;
+            const mapHeight = containerRect.height || 500;
+            
+            // Create devices with proper positioning
+            vehicleDevices.forEach((device, index) => {
+                setTimeout(() => {
+                    const deviceElement = createEnhancedDevice(map, device, mapWidth, mapHeight);
+                    discoveredDevices.push({ element: deviceElement, data: device });
+                    
+                    // Connect to gateway (except gateway itself)
+                    if (device.type !== 'gateway') {
+                        const gateway = discoveredDevices.find(d => d.data.type === 'gateway');
+                        if (gateway) {
+                            createEnhancedConnection(map, gateway.element, deviceElement);
+                            networkConnections.push({ from: gateway.element, to: deviceElement });
+                        }
+                    }
+                    
+                    updateNetworkStats();
+                }, index * 200);
+            });
+            
+            // Start real-time updates
+            setTimeout(() => {
+                status.textContent = 'Active';
+                status.className = 'status-indicator status-running';
+                startTopologyUpdates();
+            }, vehicleDevices.length * 200 + 500);
+            
+            // Initialize bandwidth monitoring
+            simulateEnhancedBandwidth();
+        }
+        
+        function createEnhancedDevice(container, deviceData, mapWidth, mapHeight) {
+            const device = document.createElement('div');
+            device.className = 'device-node';
+            device.dataset.deviceType = deviceData.type;
+            device.dataset.deviceName = deviceData.name;
+            
+            // Calculate responsive position
+            const x = (deviceData.x / 500) * mapWidth;
+            const y = (deviceData.y / 500) * mapHeight;
+            
+            device.style.left = `${x}px`;
+            device.style.top = `${y}px`;
+            device.style.background = deviceData.color;
+            device.innerHTML = `<i class="fas ${deviceData.icon}"></i>`;
+            
+            // Add enhanced tooltip
+            const tooltip = document.createElement('div');
+            tooltip.className = 'device-tooltip';
+            tooltip.innerHTML = `
+                <strong>${deviceData.name}</strong><br>
+                Type: ${deviceData.type}<br>
+                Status: Active<br>
+                Latency: ${Math.floor(Math.random() * 10) + 1}ms
+            `;
+            
+            device.appendChild(tooltip);
+            container.appendChild(device);
+            
+            // Add click interaction
+            device.addEventListener('click', () => {
+                showDeviceDetails(deviceData);
+            });
+            
+            return device;
+        }
+        
+        function createEnhancedConnection(container, fromElement, toElement) {
+            const line = document.createElement('div');
+            line.className = 'connection-line';
+            
+            const fromRect = fromElement.getBoundingClientRect();
+            const toRect = toElement.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            
+            // Calculate center positions relative to container
+            const fromX = fromRect.left + fromRect.width / 2 - containerRect.left;
+            const fromY = fromRect.top + fromRect.height / 2 - containerRect.top;
+            const toX = toRect.left + toRect.width / 2 - containerRect.left;
+            const toY = toRect.top + toRect.height / 2 - containerRect.top;
+            
+            // Calculate distance and angle
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+            
+            // Position and rotate the line
+            line.style.left = `${fromX}px`;
+            line.style.top = `${fromY}px`;
+            line.style.width = `${distance}px`;
+            line.style.transform = `rotate(${angle}deg)`;
+            
+            container.appendChild(line);
+            return line;
+        }
+        
+        function clearTopology() {
+            const map = document.getElementById('topologyMap');
+            const status = document.getElementById('topologyStatus');
+            
+            map.innerHTML = '<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: rgba(0, 255, 136, 0.5); font-size: 14px;">Click "Discover Vehicle Network" to visualize network topology</div>';
+            
+            discoveredDevices = [];
+            networkConnections = [];
+            
+            status.textContent = 'Ready';
+            status.className = 'status-indicator status-ready';
+            
+            if (topologyInterval) {
+                clearInterval(topologyInterval);
+                topologyInterval = null;
+            }
+            
+            updateNetworkStats();
+        }
+        
+        function showDeviceDetails(deviceData) {
+            alert(`Device: ${deviceData.name}\nType: ${deviceData.type}\nStatus: Active\nLatency: ${Math.floor(Math.random() * 10) + 1}ms`);
+        }
+        
+        function updateNetworkStats() {
+            document.getElementById('deviceCount').textContent = discoveredDevices.length;
+            document.getElementById('connectionCount').textContent = networkConnections.length;
+            document.getElementById('networkHealth').textContent = `${Math.floor(Math.random() * 10) + 90}%`;
+            document.getElementById('latencyAvg').textContent = `${Math.floor(Math.random() * 5) + 1}ms`;
+        }
+        
+        function startTopologyUpdates() {
+            topologyInterval = setInterval(() => {
+                // Simulate device status changes
+                discoveredDevices.forEach(device => {
+                    if (Math.random() < 0.1) { // 10% chance of status change
+                        const element = device.element;
+                        element.style.opacity = Math.random() > 0.5 ? '0.7' : '1';
+                    }
+                });
+                
+                updateNetworkStats();
+            }, 2000);
+        }
+        
+        function simulateEnhancedBandwidth() {
+            const bandwidthBar = document.getElementById('bandwidthBar');
+            const bandwidthValue = document.getElementById('bandwidthValue');
+            const peakBandwidth = document.getElementById('peakBandwidth');
+            
+            let usage = 0;
+            let direction = 1;
+            let peak = 0;
+            
+            setInterval(() => {
+                usage += direction * (Math.random() * 8 + 2);
+                
+                if (usage > 95) direction = -1;
+                if (usage < 10) direction = 1;
+                
+                usage = Math.max(5, Math.min(100, usage));
+                peak = Math.max(peak, usage);
+                
+                bandwidthBar.style.width = `${usage}%`;
+                bandwidthValue.textContent = usage.toFixed(1);
+                peakBandwidth.textContent = peak.toFixed(1);
+                
+                // Dynamic color based on usage
+                if (usage > 80) {
+                    bandwidthBar.style.background = 'linear-gradient(90deg, #ff0055, #ffaa00)';
+                } else if (usage > 50) {
+                    bandwidthBar.style.background = 'linear-gradient(90deg, #ffaa00, #bd00ff)';
+                } else {
+                    bandwidthBar.style.background = 'linear-gradient(90deg, #00ff88, #00b8ff)';
+                }
+                
+                bandwidthHistory.push(usage);
+                if (bandwidthHistory.length > 100) {
+                    bandwidthHistory.shift();
+                }
+            }, 800);
+        }
+        
+        // Socket.IO Event Handlers (existing code)
+        socket.on('ping_started', (data) => {
+            const results = document.getElementById('pingResults');
+            appendResult(results, `> Starting ping to ${data.target}...`);
+        });
+        
+        socket.on('ping_result', (data) => {
+            const results = document.getElementById('pingResults');
+            const button = document.getElementById('pingButton');
+            const status = document.getElementById('pingStatus');
+            
+            appendResult(results, data.message, data.level);
+            
+            if (data.level === 'success' || data.level === 'error') {
+                button.disabled = false;
+                status.textContent = 'Ready';
+                status.className = 'status-indicator status-ready';
+            }
+        });
+        
+        socket.on('traceroute_started', (data) => {
+            const results = document.getElementById('tracerouteResults');
+            appendResult(results, `> Starting traceroute to ${data.target}...`);
+        });
+        
+        socket.on('traceroute_result', (data) => {
+            const results = document.getElementById('tracerouteResults');
+            const button = document.getElementById('traceButton');
+            const status = document.getElementById('traceStatus');
+            
+            appendResult(results, data.message, data.level);
+            
+            if (data.level === 'success' || data.level === 'error') {
+                button.disabled = false;
+                status.textContent = 'Ready';
+                status.className = 'status-indicator status-ready';
+            }
+        });
+        
+        socket.on('portscan_started', (data) => {
+            const results = document.getElementById('portscanResults');
+            appendResult(results, `> Starting ${data.scan_speed} scan of ${data.target}...`);
+        });
+        
+        socket.on('portscan_result', (data) => {
+            const results = document.getElementById('portscanResults');
+            const button = document.getElementById('scanButton');
+            const status = document.getElementById('scanStatus');
+            
+            appendResult(results, data.message, data.level);
+            
+            if (data.level === 'success' || data.level === 'error') {
+                button.disabled = false;
+                status.textContent = 'Ready';
+                status.className = 'status-indicator status-ready';
+            }
+        });
+        
+        socket.on('connect', () => {
+            console.log('✅ Connected to Network Cortex server');
+        });
+        
+        socket.on('disconnect', () => {
+            console.log('❌ Disconnected from Network Cortex server');
+        });
+    </script>
+</body>
+</html>

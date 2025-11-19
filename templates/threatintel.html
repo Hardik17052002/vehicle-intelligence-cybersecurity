@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Threat Intelligence Hub</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background: url('../static/cyber_matrix_bg.gif') no-repeat center center fixed;
+            background-size: cover;
+            font-family: 'Orbitron', sans-serif;
+            color: #00ff88;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .threatintel-container {
+            background: rgba(10, 20, 40, 0.9);
+            border: 1px solid #bd00ff;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 0 auto;
+            width: 90%;
+            box-shadow: 0 0 30px rgba(189, 0, 255, 0.3);
+        }
+        
+        .dashboard-columns {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .ioc-feeds, .darkweb-monitor {
+            flex: 1;
+            background: rgba(20, 10, 30, 0.7);
+            border: 1px solid #00b8ff;
+            border-radius: 10px;
+            padding: 15px;
+        }
+        
+        .feed-item, .darkweb-item {
+            background: rgba(30, 20, 50, 0.5);
+            border-left: 3px solid #00ff88;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 3px;
+        }
+        
+        .feed-item.critical {
+            border-left-color: #ff0055;
+            background: rgba(50, 0, 10, 0.5);
+        }
+        
+        .ioc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .ioc-card {
+            background: rgba(10, 20, 40, 0.7);
+            border: 1px solid #00ff88;
+            border-radius: 5px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+        
+        .ioc-card.ip { border-color: #00b8ff; }
+        .ioc-card.domain { border-color: #bd00ff; }
+        .ioc-card.hash { border-color: #ffaa00; }
+        
+        .timeline {
+            margin-top: 20px;
+            position: relative;
+            padding-left: 30px;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #00ff88;
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 20px;
+            padding-left: 20px;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #bd00ff;
+        }
+        
+        .timeline-item.critical::before {
+            background: #ff0055;
+            box-shadow: 0 0 0 3px rgba(255, 0, 85, 0.3);
+        }
+        
+        .map-container {
+            height: 300px;
+            background: #0a1420;
+            border: 1px solid #00ff88;
+            border-radius: 10px;
+            margin-top: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .map-point {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            background: #ff0055;
+            box-shadow: 0 0 10px #ff0055;
+        }
+    </style>
+</head>
+<body>
+    <div class="threatintel-container">
+        <h1><i class="fas fa-bug"></i> Threat Intelligence Hub</h1>
+        
+        <div class="dashboard-columns">
+            <div class="ioc-feeds">
+                <h2><i class="fas fa-rss"></i> IOC Feeds</h2>
+                
+                <div class="feed-controls">
+                    <button onclick="refreshFeeds()"><i class="fas fa-sync-alt"></i> Refresh</button>
+                    <select id="feedSource">
+                        <option value="all">All Sources</option>
+                        <option value="alienvault">AlienVault OTX</option>
+                        <option value="fireeye">FireEye</option>
+                        <option value="mitre">MITRE ATT&CK</option>
+                    </select>
+                </div>
+                
+                <div class="feed-list" id="iocFeeds">
+                    <div class="feed-item">
+                        <h4>New APT Campaign Detected</h4>
+                        <p>State-sponsored group targeting financial sector</p>
+                        <small>2 hours ago | AlienVault</small>
+                    </div>
+                    
+                    <div class="feed-item critical">
+                        <h4>Zero-Day Exploit in Wild</h4>
+                        <p>CVE-2023-XXXXX being actively exploited</p>
+                        <small>5 hours ago | FireEye</small>
+                    </div>
+                </div>
+                
+                <h3>Recent Indicators</h3>
+                <div class="ioc-grid" id="iocGrid">
+                    <div class="ioc-card ip">192.168.3.45</div>
+                    <div class="ioc-card domain">malicious.com</div>
+                    <div class="ioc-card hash">a1b2c3...e4f5</div>
+                    <div class="ioc-card ip">10.0.8.12</div>
+                    <div class="ioc-card domain">phishingsite.net</div>
+                </div>
+            </div>
+            
+            <div class="darkweb-monitor">
+                <h2><i class="fas fa-user-secret"></i> Dark Web Monitor</h2>
+                
+                <div class="search-bar">
+                    <input type="text" id="darkwebSearch" placeholder="Search for your organization...">
+                    <button onclick="searchDarkweb()"><i class="fas fa-search"></i></button>
+                </div>
+                
+                <div class="darkweb-results" id="darkwebResults">
+                    <div class="darkweb-item">
+                        <h4>YourDomain.com found in leak</h4>
+                        <p>Credentials dump from 2023 breach</p>
+                        <small>Dark Web Forum | 3 days ago</small>
+                    </div>
+                </div>
+                
+                <h3>Threat Timeline</h3>
+                <div class="timeline" id="threatTimeline">
+                    <div class="timeline-item">
+                        <h4>New ransomware variant</h4>
+                        <p>Detected in underground markets</p>
+                        <small>Today 09:45</small>
+                    </div>
+                    
+                    <div class="timeline-item critical">
+                        <h4>Your industry mentioned</h4>
+                        <p>Discussion about targeting your sector</p>
+                        <small>Yesterday 22:30</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <h2><i class="fas fa-globe-americas"></i> Threat Activity Map</h2>
+        <div class="map-container" id="threatMap">
+            <!-- Points will be added dynamically -->
+        </div>
+    </div>
+
+    <script>
+        // IOC Feeds
+        function refreshFeeds() {
+            const feedSource = document.getElementById('feedSource').value;
+            const feedList = document.getElementById('iocFeeds');
+            const iocGrid = document.getElementById('iocGrid');
+            
+            feedList.innerHTML = `
+                <div class="feed-item">
+                    <h4>Loading latest intelligence...</h4>
+                    <p>Fetching from ${feedSource} feed</p>
+                </div>
+            `;
+            
+            // Simulate API call
+            setTimeout(() => {
+                feedList.innerHTML = '';
+                
+                // Add sample feed items
+                const feeds = [
+                    {
+                        title: "New Phishing Campaign",
+                        description: "Targeting financial sector employees",
+                        source: "AlienVault",
+                        critical: false
+                    },
+                    {
+                        title: "Critical Infrastructure Attack",
+                        description: "New malware targeting SCADA systems",
+                        source: "FireEye",
+                        critical: true
+                    },
+                    {
+                        title: "Exploit Kit Update",
+                        description: "Added 2 new browser exploits",
+                        source: "MITRE",
+                        critical: false
+                    }
+                ];
+                
+                feeds.forEach(feed => {
+                    const item = document.createElement('div');
+                    item.className = `feed-item ${feed.critical ? 'critical' : ''}`;
+                    item.innerHTML = `
+                        <h4>${feed.title}</h4>
+                        <p>${feed.description}</p>
+                        <small>${new Date().toLocaleTimeString()} | ${feed.source}</small>
+                    `;
+                    feedList.appendChild(item);
+                });
+                
+                // Update IOC grid
+                iocGrid.innerHTML = '';
+                const iocs = [
+                    { type: 'ip', value: '104.21.3.45' },
+                    { type: 'domain', value: 'malware-distribution.xyz' },
+                    { type: 'hash', value: 'd4e5f6...a1b2c3' },
+                    { type: 'ip', value: '172.67.8.90' },
+                    { type: 'domain', value: 'fake-login-page.com' },
+                    { type: 'hash', value: '1a2b3c...4d5e6f' }
+                ];
+                
+                iocs.forEach(ioc => {
+                    const card = document.createElement('div');
+                    card.className = `ioc-card ${ioc.type}`;
+                    card.textContent = ioc.value;
+                    iocGrid.appendChild(card);
+                });
+            }, 1500);
+        }
+        
+        // Dark Web Search
+        function searchDarkweb() {
+            const query = document.getElementById('darkwebSearch').value;
+            const results = document.getElementById('darkwebResults');
+            
+            if (!query) {
+                alert("Please enter a search term");
+                return;
+            }
+            
+            results.innerHTML = `
+                <div class="darkweb-item">
+                    <h4>Searching dark web for "${query}"...</h4>
+                    <p>This may take a few moments</p>
+                </div>
+            `;
+            
+            // Simulate search
+            setTimeout(() => {
+                results.innerHTML = '';
+                
+                const findings = [
+                    {
+                        title: `${query} credentials found`,
+                        description: "Included in recent data breach",
+                        source: "Dark Web Forum",
+                        date: "2 hours ago"
+                    },
+                    {
+                        title: `Discussion about ${query}`,
+                        description: "Potential attack planning",
+                        source: "Underground Chat",
+                        date: "1 day ago"
+                    }
+                ];
+                
+                if (findings.length === 0) {
+                    results.innerHTML = `
+                        <div class="darkweb-item">
+                            <h4>No results found</h4>
+                            <p>No mentions of "${query}" found in monitored sources</p>
+                        </div>
+                    `;
+                } else {
+                    findings.forEach(item => {
+                        const elem = document.createElement('div');
+                        elem.className = 'darkweb-item';
+                        elem.innerHTML = `
+                            <h4>${item.title}</h4>
+                            <p>${item.description}</p>
+                            <small>${item.source} | ${item.date}</small>
+                        `;
+                        results.appendChild(elem);
+                    });
+                }
+            }, 2000);
+        }
+        
+        // Threat Map
+        function initThreatMap() {
+            const map = document.getElementById('threatMap');
+            
+            // Add random threat points
+            for (let i = 0; i < 15; i++) {
+                const point = document.createElement('div');
+                point.className = 'map-point';
+                point.style.left = `${5 + Math.random() * 90}%`;
+                point.style.top = `${5 + Math.random() * 90}%`;
+                
+                // Random size for "severity"
+                const size = 5 + Math.random() * 10;
+                point.style.width = `${size}px`;
+                point.style.height = `${size}px`;
+                
+                map.appendChild(point);
+            }
+            
+            // Make points pulse
+            setInterval(() => {
+                document.querySelectorAll('.map-point').forEach(point => {
+                    point.style.boxShadow = `0 0 ${5 + Math.random() * 10}px #ff0055`;
+                });
+            }, 1000);
+        }
+        
+        // Initialize when page loads
+        window.onload = function() {
+            initThreatMap();
+            refreshFeeds();
+            
+            // Add sample timeline items
+            const timeline = document.getElementById('threatTimeline');
+            const events = [
+                {
+                    title: "New exploit kit detected",
+                    description: "Targeting financial sector",
+                    time: "Today 07:30",
+                    critical: false
+                },
+                {
+                    title: "Your competitor breached",
+                    description: "Credentials being sold",
+                    time: "Yesterday 18:45",
+                    critical: true
+                }
+            ];
+            
+            events.forEach(event => {
+                const item = document.createElement('div');
+                item.className = `timeline-item ${event.critical ? 'critical' : ''}`;
+                item.innerHTML = `
+                    <h4>${event.title}</h4>
+                    <p>${event.description}</p>
+                    <small>${event.time}</small>
+                `;
+                timeline.appendChild(item);
+            });
+        };
+    </script>
+</body>
+</html>

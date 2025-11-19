@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cyber War Room</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background: url('../static/cyber_matrix_bg.gif') no-repeat center center fixed;
+            background-size: cover;
+            font-family: 'Orbitron', sans-serif;
+            color: #00ff88;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .warroom-container {
+            background: rgba(10, 20, 40, 0.9);
+            border: 1px solid #00ff88;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 0 auto;
+            width: 90%;
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+            display: flex;
+            flex-direction: column;
+            height: 80vh;
+        }
+        
+        .warroom-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #00ff88;
+            padding-bottom: 10px;
+        }
+        
+        .warroom-content {
+            display: flex;
+            flex: 1;
+            gap: 20px;
+            overflow: hidden;
+        }
+        
+        .user-list {
+            width: 200px;
+            background: rgba(20, 10, 30, 0.7);
+            border: 1px solid #bd00ff;
+            border-radius: 10px;
+            padding: 15px;
+            overflow-y: auto;
+        }
+        
+        .user-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.2);
+        }
+        
+        .user-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #00b8ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+        }
+        
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(20, 10, 30, 0.7);
+            border: 1px solid #00b8ff;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            max-width: 70%;
+        }
+        
+        .message.received {
+            align-self: flex-start;
+        }
+        
+        .message.sent {
+            align-self: flex-end;
+            background: rgba(0, 184, 255, 0.2);
+            border-radius: 10px;
+            padding: 10px;
+        }
+        
+        .message-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        .message-time {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            margin-left: 10px;
+        }
+        
+        .chat-input {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #00ff88;
+            background: rgba(10, 20, 40, 0.9);
+        }
+        
+        .chat-input input {
+            flex: 1;
+            background: #0a0a1a;
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        .chat-input button {
+            background: #00ff88;
+            color: #0a0a1a;
+            border: none;
+            padding: 0 15px;
+            margin-left: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: bold;
+        }
+        
+        .incident-board {
+            width: 300px;
+            background: rgba(20, 10, 30, 0.7);
+            border: 1px solid #ff0055;
+            border-radius: 10px;
+            padding: 15px;
+            overflow-y: auto;
+        }
+        
+        .incident-item {
+            background: rgba(40, 0, 10, 0.5);
+            border-left: 3px solid #ff0055;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 3px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .status-active {
+            background: #ff0055;
+            box-shadow: 0 0 5px #ff0055;
+        }
+        
+        .status-resolved {
+            background: #00ff88;
+        }
+        
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .toolbar button {
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div class="warroom-container">
+        <div class="warroom-header">
+            <h1><i class="fas fa-users"></i> Cyber War Room</h1>
+            <div class="warroom-status">
+                <span class="status-indicator status-active"></span>
+                <span>ACTIVE INCIDENT: #INC-2023-156</span>
+            </div>
+        </div>
+        
+        <div class="warroom-content">
+            <div class="user-list">
+                <h3><i class="fas fa-user-shield"></i> Team Members</h3>
+                
+                <div class="user-item">
+                    <div class="user-avatar"><i class="fas fa-crown"></i></div>
+                    <div>Team Lead</div>
+                </div>
+                
+                <div class="user-item">
+                    <div class="user-avatar"><i class="fas fa-search"></i></div>
+                    <div>Threat Analyst</div>
+                </div>
+                
+                <div class="user-item">
+                    <div class="user-avatar"><i class="fas fa-terminal"></i></div>
+                    <div>Pentester</div>
+                </div>
+                
+                <div class="user-item">
+                    <div class="user-avatar"><i class="fas fa-network-wired"></i></div>
+                    <div>Network Specialist</div>
+                </div>
+                
+                <div class="user-item">
+                    <div class="user-avatar"><i class="fas fa-laptop-code"></i></div>
+                    <div>Forensics</div>
+                </div>
+            </div>
+            
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message received">
+                        <div class="message-header">
+                            <div class="user-avatar"><i class="fas fa-crown"></i></div>
+                            <strong>Team Lead</strong>
+                            <span class="message-time">10:23 AM</span>
+                        </div>
+                        <p>We have a potential breach in progress. Everyone join the war room.</p>
+                    </div>
+                    
+                    <div class="message received">
+                        <div class="message-header">
+                            <div class="user-avatar"><i class="fas fa-search"></i></div>
+                            <strong>Threat Analyst</strong>
+                            <span class="message-time">10:25 AM</span>
+                        </div>
+                        <p>I'm seeing multiple failed login attempts from unusual locations.</p>
+                    </div>
+                    
+                    <div class="message sent">
+                        <div class="message-header">
+                            <strong>You</strong>
+                            <span class="message-time">10:26 AM</span>
+                        </div>
+                        <p>Should we initiate containment procedures?</p>
+                    </div>
+                </div>
+                
+                <div class="chat-input">
+                    <input type="text" id="messageInput" placeholder="Type your message...">
+                    <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+            
+            <div class="incident-board">
+                <h3><i class="fas fa-fire"></i> Active Incident</h3>
+                
+                <div class="incident-item">
+                    <h4>#INC-2023-156</h4>
+                    <p>Potential brute force attack in progress</p>
+                    <p><strong>Status:</strong> <span class="status-indicator status-active"></span> Active</p>
+                    <p><strong>Severity:</strong> High</p>
+                    
+                    <div class="toolbar">
+                        <button onclick="containIncident()"><i class="fas fa-shield-alt"></i> Contain</button>
+                        <button onclick="resolveIncident()"><i class="fas fa-check"></i> Resolve</button>
+                    </div>
+                </div>
+                
+                <h3>Incident Timeline</h3>
+                <div class="incident-timeline">
+                    <p><i class="fas fa-circle"></i> 10:15 AM - First alert triggered</p>
+                    <p><i class="fas fa-circle"></i> 10:20 AM - Team notified</p>
+                    <p><i class="fas fa-circle"></i> 10:22 AM - War room activated</p>
+                </div>
+                
+                <h3>Action Items</h3>
+                <div class="action-items">
+                    <div class="action-item">
+                        <input type="checkbox" id="action1">
+                        <label for="action1">Block suspicious IPs</label>
+                    </div>
+                    <div class="action-item">
+                        <input type="checkbox" id="action2">
+                        <label for="action2">Review auth logs</label>
+                    </div>
+                    <div class="action-item">
+                        <input type="checkbox" id="action3">
+                        <label for="action3">Check for IOCs</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Chat functionality
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            const chat = document.getElementById('chatMessages');
+            
+            if (message) {
+                // Add sent message
+                const sentMsg = document.createElement('div');
+                sentMsg.className = 'message sent';
+                sentMsg.innerHTML = `
+                    <div class="message-header">
+                        <strong>You</strong>
+                        <span class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    </div>
+                    <p>${message}</p>
+                `;
+                chat.appendChild(sentMsg);
+                
+                // Clear input
+                input.value = '';
+                
+                // Simulate response after delay
+                setTimeout(() => {
+                    const responses = [
+                        "I'm looking into the logs now.",
+                        "We should block those IPs immediately.",
+                        "I've seen this pattern before - likely a botnet.",
+                        "Can you check the SIEM for related events?"
+                    ];
+                    
+                    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                    const randomUser = Math.random() > 0.5 ? "Threat Analyst" : "Team Lead";
+                    const randomIcon = randomUser === "Threat Analyst" ? "fa-search" : "fa-crown";
+                    
+                    const receivedMsg = document.createElement('div');
+                    receivedMsg.className = 'message received';
+                    receivedMsg.innerHTML = `
+                        <div class="message-header">
+                            <div class="user-avatar"><i class="fas ${randomIcon}"></i></div>
+                            <strong>${randomUser}</strong>
+                            <span class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                        </div>
+                        <p>${randomResponse}</p>
+                    `;
+                    chat.appendChild(receivedMsg);
+                    
+                    // Scroll to bottom
+                    chat.scrollTop = chat.scrollHeight;
+                }, 1000 + Math.random() * 2000);
+                
+                // Scroll to bottom
+                chat.scrollTop = chat.scrollHeight;
+            }
+        }
+        
+        // Allow sending message with Enter key
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        // Incident management
+        function containIncident() {
+            alert("Containment procedures initiated. Blocking suspicious IPs and isolating affected systems.");
+            
+            // Update incident status
+            const timeline = document.querySelector('.incident-timeline');
+            const newEvent = document.createElement('p');
+            newEvent.innerHTML = `<i class="fas fa-circle"></i> ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - Containment initiated`;
+            timeline.appendChild(newEvent);
+            
+            // Add action item
+            const actionItems = document.querySelector('.action-items');
+            const newAction = document.createElement('div');
+            newAction.className = 'action-item';
+            newAction.innerHTML = `
+                <input type="checkbox" id="action4">
+                <label for="action4">Verify containment</label>
+            `;
+            actionItems.appendChild(newAction);
+        }
+        
+        function resolveIncident() {
+            if (confirm("Mark this incident as resolved?")) {
+                // Update status
+                document.querySelector('.incident-item p strong:contains("Status")').nextElementSibling.className = 'status-indicator status-resolved';
+                document.querySelector('.incident-item p strong:contains("Status")').nextElementSibling.nextSibling.textContent = ' Resolved';
+                
+                // Update timeline
+                const timeline = document.querySelector('.incident-timeline');
+                const newEvent = document.createElement('p');
+                newEvent.innerHTML = `<i class="fas fa-circle"></i> ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - Incident resolved`;
+                timeline.appendChild(newEvent);
+                
+                // Disable buttons
+                document.querySelectorAll('.toolbar button').forEach(btn => {
+                    btn.disabled = true;
+                });
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Smart IDS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Socket.IO Client - CRITICAL: Load before custom JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+
+
+    <style>
+        body {
+            background: url('/static/cyber_matrix_bg.gif') no-repeat center center fixed;
+            background-size: cover;
+            font-family: 'Orbitron', sans-serif;
+            color: #00ff88;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .ids-container {
+            background: rgba(10, 20, 40, 0.9);
+            border: 1px solid #ff0055;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 0 auto 30px auto;
+            width: 95%;
+            max-width: 1400px;
+            box-shadow: 0 0 30px rgba(255, 0, 85, 0.3);
+        }
+        
+        .realtime-ids-container {
+            background: rgba(20, 40, 10, 0.9);
+            border: 1px solid #00ff88;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 0 auto;
+            width: 95%;
+            max-width: 1400px;
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+        }
+        
+        .control-panel {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        
+        .control-panel button {
+            background: linear-gradient(45deg, #ff0055, #bd00ff);
+            border: none;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 0, 85, 0.3);
+        }
+        
+        .realtime-control-panel button {
+            background: linear-gradient(45deg, #00ff88, #00b8ff);
+            border: none;
+            color: #0a0a1a;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+        }
+        
+        .control-panel button:hover, .realtime-control-panel button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 0, 85, 0.5);
+        }
+        
+        .traffic-monitor {
+            display: flex;
+            height: 450px;
+            margin-top: 20px;
+            gap: 20px;
+        }
+        
+        .traffic-log {
+            background: #0a0a1a;
+            color: #00ff88;
+            font-family: monospace;
+            padding: 15px;
+            border-radius: 10px;
+            width: 65%;
+            overflow-y: auto;
+            border: 2px solid #00ff88;
+            white-space: pre-wrap;
+            box-shadow: inset 0 0 10px rgba(0, 255, 136, 0.2);
+        }
+        
+        .realtime-traffic-log {
+            background: #0a1a0a;
+            color: #00ff88;
+            font-family: monospace;
+            padding: 15px;
+            border-radius: 10px;
+            width: 65%;
+            overflow-y: auto;
+            border: 2px solid #00ff88;
+            white-space: pre-wrap;
+            box-shadow: inset 0 0 10px rgba(0, 255, 136, 0.2);
+        }
+        
+        .traffic-stats {
+            background: rgba(20, 10, 30, 0.8);
+            border: 2px solid #bd00ff;
+            border-radius: 10px;
+            padding: 20px;
+            width: 35%;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(189, 0, 255, 0.3);
+        }
+        
+        .realtime-traffic-stats {
+            background: rgba(10, 30, 20, 0.8);
+            border: 2px solid #00ff88;
+            border-radius: 10px;
+            padding: 20px;
+            width: 35%;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+        
+        .stats-section {
+            margin-bottom: 25px;
+        }
+        
+        .stat-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(0, 255, 136, 0.1);
+            border-radius: 5px;
+            border-left: 4px solid #00b8ff;
+        }
+        
+        .realtime-stat-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(0, 255, 136, 0.2);
+            border-radius: 5px;
+            border-left: 4px solid #00ff88;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            color: #00b8ff;
+            font-weight: bold;
+        }
+        
+        .realtime-stat-value {
+            font-size: 1.8rem;
+            color: #00ff88;
+            font-weight: bold;
+        }
+        
+        .alerts-section {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .alerts-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 0, 85, 0.3);
+        }
+        
+        .realtime-alerts-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.3);
+        }
+        
+        .alerts-header h3 {
+            margin: 0;
+            color: #ff0055;
+        }
+        
+        .realtime-alerts-header h3 {
+            margin: 0;
+            color: #00ff88;
+        }
+        
+        #recentAlerts, #realtimeAlerts {
+            flex-grow: 1;
+            overflow-y: auto;
+            max-height: 200px;
+            padding-right: 10px;
+        }
+        
+        /* Custom scrollbar for alerts */
+        #recentAlerts::-webkit-scrollbar, #realtimeAlerts::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        #recentAlerts::-webkit-scrollbar-track {
+            background: rgba(255, 0, 85, 0.1);
+            border-radius: 4px;
+        }
+        
+        #realtimeAlerts::-webkit-scrollbar-track {
+            background: rgba(0, 255, 136, 0.1);
+            border-radius: 4px;
+        }
+        
+        #recentAlerts::-webkit-scrollbar-thumb {
+            background: #ff0055;
+            border-radius: 4px;
+        }
+        
+        #realtimeAlerts::-webkit-scrollbar-thumb {
+            background: #00ff88;
+            border-radius: 4px;
+        }
+        
+        #recentAlerts::-webkit-scrollbar-thumb:hover {
+            background: #bd00ff;
+        }
+        
+        #realtimeAlerts::-webkit-scrollbar-thumb:hover {
+            background: #00b8ff;
+        }
+        
+        .alert-item {
+            background: linear-gradient(135deg, rgba(255, 0, 85, 0.2), rgba(189, 0, 255, 0.1));
+            border-left: 4px solid #ff0055;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            display: block;
+            word-wrap: break-word;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        .realtime-alert-item {
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.2), rgba(0, 184, 255, 0.1));
+            border-left: 4px solid #00ff88;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            display: block;
+            word-wrap: break-word;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        .alert-item:hover, .realtime-alert-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 10px rgba(255, 0, 85, 0.4);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .network-section {
+            margin-top: 30px;
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px 0;
+            border-bottom: 2px solid rgba(0, 255, 136, 0.3);
+        }
+        
+        .section-header h3 {
+            margin: 0;
+            color: #00ff88;
+            font-size: 1.3rem;
+        }
+        
+        .map-visualization {
+            height: 300px;
+            background: linear-gradient(135deg, #0a1420, #0f1a2e);
+            border: 2px solid #00ff88;
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0, 255, 136, 0.2);
+        }
+        
+        .map-node {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background: #00ff88;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.6);
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .map-node:hover {
+            transform: translate(-50%, -50%) scale(1.2);
+        }
+        
+        .map-line {
+            position: absolute;
+            height: 3px;
+            background: linear-gradient(90deg, rgba(0, 255, 136, 0.8), rgba(255, 0, 85, 0.4));
+            transform-origin: 0 0;
+            transition: all 0.3s ease;
+            border-radius: 2px;
+            box-shadow: 0 0 8px rgba(0, 255, 136, 0.4);
+        }
+        
+        /* Responsive design */
+        @media (max-width: 1024px) {
+            .traffic-monitor {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .traffic-log, .traffic-stats, .realtime-traffic-log, .realtime-traffic-stats {
+                width: 100%;
+            }
+            
+            .traffic-log, .realtime-traffic-log {
+                height: 250px;
+                margin-bottom: 20px;
+            }
+            
+            .traffic-stats, .realtime-traffic-stats {
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- SIMULATED IDS PANEL -->
+    <div class="ids-container">
+        <h1><i class="fas fa-shield-alt"></i> Smart Intrusion Detection System (Simulated)</h1>
+        
+        <div class="control-panel">
+            <button id="startMonitoring"><i class="fas fa-play"></i> Start Monitoring</button>
+            <button id="stopMonitoring"><i class="fas fa-stop"></i> Stop Monitoring</button>
+            <button id="blockAll"><i class="fas fa-ban"></i> Block All Threats</button>
+        </div>
+        
+        <div class="traffic-monitor">
+            <div class="traffic-log" id="trafficLog">
+                &gt; IDS initialized. Waiting for network traffic...
+            </div>
+            
+            <div class="traffic-stats">
+                <div class="stats-section">
+                    <h3><i class="fas fa-chart-bar"></i> Live Statistics</h3>
+                    
+                    <div class="stat-item">
+                        <div class="stat-label">Threats Detected</div>
+                        <div class="stat-value" id="threatCount">0</div>
+                    </div>
+                    
+                    <div class="stat-item">
+                        <div class="stat-label">Packets Analyzed</div>
+                        <div class="stat-value" id="packetCount">0</div>
+                    </div>
+                    
+                    <div class="stat-item">
+                        <div class="stat-label">Attack Sources</div>
+                        <div class="stat-value" id="sourceCount">0</div>
+                    </div>
+                </div>
+                
+                <div class="alerts-section">
+                    <div class="alerts-header">
+                        <h3><i class="fas fa-bell"></i> Recent Alerts</h3>
+                    </div>
+                    <div id="recentAlerts">
+                        <div class="alert-item">No alerts yet</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="network-section">
+            <div class="section-header">
+                <h3><i class="fas fa-network-wired"></i> Network Map</h3>
+            </div>
+            <div class="map-visualization" id="networkMap">
+                <!-- Nodes will be added dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- REAL-TIME IDS PANEL -->
+    <div class="realtime-ids-container">
+        <h1><i class="fas fa-satellite-dish"></i> Real-Time IDS Scan (Suricata on eth0)</h1>
+        
+        <div class="control-panel realtime-control-panel">
+            <button id="startRealtimeIDS"><i class="fas fa-play"></i> Start Real-Time Scan</button>
+            <button id="stopRealtimeIDS"><i class="fas fa-stop"></i> Stop Real-Time Scan</button>
+            <button id="clearRealtimeAlerts"><i class="fas fa-trash"></i> Clear Alerts</button>
+        </div>
+        
+        <div class="traffic-monitor">
+            <div class="realtime-traffic-log" id="realtimeTrafficLog">
+                &gt; Real-time IDS ready. Waiting for connection...
+            </div>
+            
+            <div class="realtime-traffic-stats">
+                <div class="stats-section">
+                    <h3><i class="fas fa-chart-line"></i> Real-Time Statistics</h3>
+                    
+                    <div class="realtime-stat-item">
+                        <div class="stat-label">Real Threats</div>
+                        <div class="realtime-stat-value" id="realtimeThreatCount">0</div>
+                    </div>
+                    
+                    <div class="realtime-stat-item">
+                        <div class="stat-label">Alert Events</div>
+                        <div class="realtime-stat-value" id="realtimeEventCount">0</div>
+                    </div>
+                    
+                    <div class="realtime-stat-item">
+                        <div class="stat-label">Active Status</div>
+                        <div class="realtime-stat-value" id="realtimeStatus">Inactive</div>
+                    </div>
+                </div>
+                
+                <div class="alerts-section">
+                    <div class="realtime-alerts-header">
+                        <h3><i class="fas fa-exclamation-triangle"></i> Live Alerts</h3>
+                    </div>
+                    <div id="realtimeAlerts">
+                        <div class="realtime-alert-item">No live alerts yet</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load custom JS after DOM elements are created - CRITICAL PLACEMENT -->
+    <script src="/static/js/ids.js"></script>
+</body>
+</html>

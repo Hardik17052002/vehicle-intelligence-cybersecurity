@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Next-Gen Cyber Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cyber-green: #00ff88;
+            --cyber-purple: #bd00ff;
+            --dark-bg: #0a0a1a;
+        }
+
+        body {
+            background: url('static/cyber_matrix_bg.gif') no-repeat center center fixed;
+            background-size: cover;
+            font-family: 'Orbitron', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: var(--cyber-green);
+            overflow-x: hidden;
+        }
+
+        .alert-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: #ff0055;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+            z-index: 1000;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.8; }
+            50% { opacity: 1; }
+            100% { opacity: 0.8; }
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            padding: 30px;
+            background-color: rgba(10, 10, 26, 0.85);
+            min-height: 100vh;
+        }
+
+        .module {
+            background: linear-gradient(145deg, #121230, #0a0a1a);
+            border: 1px solid var(--cyber-purple);
+            border-radius: 15px;
+            padding: 25px;
+            transition: all 0.4s;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(189, 0, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .module:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 25px rgba(189, 0, 255, 0.6);
+        }
+
+        .module::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            z-index: -1;
+            background: linear-gradient(45deg, #00ff88, #bd00ff, #00b8ff);
+            background-size: 400%;
+            border-radius: 16px;
+            opacity: 0;
+            transition: 0.5s;
+            animation: animate 20s linear infinite;
+        }
+
+        .module:hover::before {
+            opacity: 1;
+            filter: blur(5px);
+        }
+
+        @keyframes animate {
+            0% { background-position: 0 0; }
+            50% { background-position: 400% 0; }
+            100% { background-position: 0 0; }
+        }
+
+        .module h2 {
+            text-align: center;
+            margin-top: 0;
+            font-size: 1.5rem;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.7);
+        }
+
+        .module-icon {
+            font-size: 60px;
+            text-align: center;
+            margin: 20px 0;
+            filter: drop-shadow(0 0 5px var(--cyber-green));
+        }
+
+        .live-stats {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(10, 10, 30, 0.9);
+            border: 1px solid var(--cyber-green);
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            gap: 20px;
+        }
+
+        .stat-box {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            color: var(--cyber-purple);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="alert-banner" id="globalAlert">
+        🚨 CRITICAL THREAT DETECTED 🚨
+    </div>
+
+    <div class="dashboard">
+        <div class="module" onclick="openModule('vulnerability')">
+            <div class="module-icon">🛡️</div>
+            <h2>AI Threat Scanner</h2>
+            <p>Next-gen vulnerability assessment with machine learning</p>
+        </div>
+
+        <div class="module" onclick="openModule('pentest')">
+            <div class="module-icon">⚡</div>
+            <h2>Auto-Pentest Suite</h2>
+            <p>Automated exploit testing with AI recommendations</p>
+        </div>
+
+        <div class="module" onclick="openModule('ids')">
+            <div class="module-icon">🔔</div>
+            <h2>Smart IDS</h2>
+            <p>Real-time anomaly detection with behavioral analysis</p>
+        </div>
+
+        <div class="module" onclick="openModule('network')">
+            <div class="module-icon">🕸️</div>
+            <h2>Network Cortex</h2>
+            <p>3D topology mapping and traffic visualization</p>
+        </div>
+
+        <div class="module" onclick="openModule('threatintel')">
+            <div class="module-icon">🌐</div>
+            <h2>Threat Intelligence</h2>
+            <p>Dark web monitoring and IOC feeds</p>
+        </div>
+
+        <div class="module" onclick="openModule('collab')">
+            <div class="module-icon">👥</div>
+            <h2>Cyber War Room</h2>
+            <p>Real-time team collaboration and chat</p>
+        </div>
+    </div>
+
+    <div class="live-stats">
+        <div class="stat-box">
+            <div class="stat-value" id="threatCount">0</div>
+            <div class="stat-label">THREATS BLOCKED</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value" id="attackRate">0/s</div>
+            <div class="stat-label">ATTACK RATE</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value" id="systemsSafe">100%</div>
+            <div class="stat-label">SYSTEMS SECURE</div>
+        </div>
+    </div>
+
+    <audio id="alertSound" src="static/alert.mp3" preload="auto"></audio>
+
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script>
+        const socket = io();
+
+        socket.on('alert', function(data) {
+            showAlert(data.message, data.level);
+            document.getElementById('threatCount').textContent = data.stats.threats;
+            document.getElementById('attackRate').textContent = `${data.stats.rate}/s`;
+            document.getElementById('systemsSafe').textContent = `${data.stats.safety}%`;
+        });
+
+        function showAlert(message, level='critical') {
+            const alertBanner = document.getElementById('globalAlert');
+            const alertSound = document.getElementById('alertSound');
+
+            alertBanner.textContent = `🚨 ${message.toUpperCase()} 🚨`;
+            alertBanner.style.display = 'block';
+
+            if (level === 'critical') {
+                alertBanner.style.background = '#ff0055';
+                alertSound.play();
+            } else if (level === 'warning') {
+                alertBanner.style.background = '#ffaa00';
+            }
+
+            setTimeout(() => {
+                alertBanner.style.display = 'none';
+            }, 10000);
+        }
+
+        function openModule(module) {
+            if ("vibrate" in navigator) {
+                navigator.vibrate(50);
+            }
+            window.location.href = `/${module}`;
+        }
+    </script>
+</body>
+</html>
